@@ -1,0 +1,19 @@
+# Rust
+/target/
+**/*.rs.bk
+# Node
+node_modules/
+dist/
+# Env and secrets (never commit credentials)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+# Local data
+*.sqlite
+*.sqlite3
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
