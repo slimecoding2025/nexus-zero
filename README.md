@@ -5,7 +5,7 @@
 NEXUS ZERO is a Digital Infrastructure Intelligence Platform: an evidence-based model of how an organization's infrastructure fits together, with analysis for dependencies, change impact, and security posture.
 
 > **Status: pre-alpha, foundation stage. Nothing described under "Planned" is implemented yet.**
-> This repository currently contains the project's license, security policy, and design documents. There is no runnable software, no screenshots, and no benchmarks. This README will be updated as capabilities are built and verified.
+> This repository contains the license, security policy, design documents, and the first two Rust library crates (`nexus-domain`, `nexus-graph`: typed graph model, impact traversal, snapshots and diff). There is no CLI, no provider integration, no UI, no screenshots, and no benchmarks yet. This README will be updated as capabilities are built and verified.
 
 ## What it aims to do
 

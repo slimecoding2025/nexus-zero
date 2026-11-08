@@ -14,7 +14,7 @@ Status legend: planned / in progress / done. Nothing below is done unless marked
 - Open-source / Enterprise boundary: planned
 
 ## Phase 3: Core engine
-- Rust workspace, domain and graph crates, snapshots, diff: planned
+- Rust workspace, domain and graph crates, snapshots, diff: in progress (domain and graph crates with 16 unit tests passing locally on Rust 1.75; CI workflow added but not yet run on GitHub; no serialization or storage yet)
 
 ## Phase 4: Integrations
 - GitHub, then Cloudflare, Vercel, Render, Supabase: planned
