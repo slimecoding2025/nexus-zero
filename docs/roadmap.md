@@ -5,8 +5,8 @@ Status legend: planned / in progress / done. Nothing below is done unless marked
 ## Phase 1: Research (in progress)
 - Repository assessment: done (repository was empty at start)
 - GSAP Skills review: partial (README read; individual SKILL.md files still to be read)
-- Competitive analysis with sources: planned
-- Differentiation validated: planned
+- Competitive analysis with sources: partial (v0 in docs/research/competitive-analysis.md; Datadog, OpenTelemetry and provider coverage still to do)
+- Differentiation validated: not yet (hypotheses listed; Cartography overlap must be checked)
 
 ## Phase 2: Architecture
 - Domain model, graph design, API contracts: planned
