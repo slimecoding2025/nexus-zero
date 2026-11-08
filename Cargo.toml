@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = ["crates/domain", "crates/graph"]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.75"
+license = "Apache-2.0"
+repository = "https://github.com/slimecoding2025/nexus-zero"

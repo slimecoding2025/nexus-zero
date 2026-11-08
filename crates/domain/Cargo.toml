@@ -1,0 +1,10 @@
+[package]
+name = "nexus-domain"
+description = "Typed resources, relationships, provenance and evidence for NEXUS ZERO"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
