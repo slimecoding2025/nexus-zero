@@ -1,0 +1,12 @@
+[package]
+name = "nexus-analysis"
+description = "Evidence-based change impact analysis for NEXUS ZERO"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+nexus-domain = { path = "../domain" }
+nexus-graph = { path = "../graph" }
