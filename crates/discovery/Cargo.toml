@@ -1,0 +1,15 @@
+[package]
+name = "nexus-discovery"
+description = "Read-only provider discovery adapters for NEXUS ZERO"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+nexus-domain = { path = "../domain" }
+nexus-graph = { path = "../graph" }
+
+[dev-dependencies]
+nexus-analysis = { path = "../analysis" }
