@@ -29,3 +29,7 @@
 - Wrote `docs/integrations/github.md`; the code referenced it but it did not exist. Checked against GitHub's docs: listing organization repositories needs read access to the Metadata permission, `per_page` is capped at 100, and `sort=full_name` is supported. Not checked: permissions of the user-repositories endpoint, and the rate-limit rules the source cites.
 - Open issue found in review: a malformed `Link` header is read as "no next page", so pagination could end early while the sync is reported complete.
 - Not done: HTTP transport, relationship discovery, a run against a real organization.
+- Fixed the `Link` header gap: a malformed header now returns `FetchError::MalformedLinkHeader` instead of ending pagination silently.
+- Added relationship discovery from workflow files (`github/workflows.rs`): `uses:` references become observed `DependsOn` edges with file and line evidence. It uses a line scanner, not a YAML parser, so it can miss unusual syntax. Reading files needs the Contents read permission.
+- fmt, clippy (-D warnings) and 72 tests (6 domain, 10 graph, 6 analysis, 50 discovery) pass locally on Rust 1.97. Not verified: CI on GitHub for this branch, a run against a real organization.
+- Commit hygiene: the two earlier unmerged commits on `feat/discovery-github-adapter` carried a Claude co-author trailer; at the owner's request they were rewritten without it and force-pushed (with lease) on that unmerged branch. `main` was not affected.

@@ -48,6 +48,12 @@ use nexus_graph::{Graph, GraphError};
 
 use crate::json::{self, Json};
 
+mod workflows;
+pub use workflows::{
+    parse_workflow_uses, ActionRef, WorkflowDiscovery, WorkflowOptions, WorkflowReport,
+    WorkflowSkip,
+};
+
 /// Base URL of the public GitHub REST API.
 pub const PUBLIC_API_BASE: &str = "https://api.github.com";
 /// REST API version this adapter is written against. Pinned on purpose so
@@ -330,6 +336,9 @@ pub enum FetchError {
     UnexpectedNextLink(String),
     /// A `Link: rel="next"` pointed at a page already fetched.
     LinkLoop,
+    /// The `Link` header could not be parsed, so it is unknown whether more
+    /// pages exist. Treating it as "no next page" could end a sync early.
+    MalformedLinkHeader,
     PageLimitReached {
         max_pages: usize,
     },
@@ -374,6 +383,9 @@ impl fmt::Display for FetchError {
                 write!(f, "pagination link points outside the API base: {u}")
             }
             FetchError::LinkLoop => f.write_str("pagination links loop back to a page already read"),
+            FetchError::MalformedLinkHeader => {
+                f.write_str("the Link header is malformed, so pagination cannot be trusted")
+            }
             FetchError::PageLimitReached { max_pages } => {
                 write!(f, "stopped after the {max_pages} page limit")
             }
@@ -559,7 +571,7 @@ impl<T: Transport> GitHubClient<T> {
                 }
             }
 
-            next = match next_link(&response.headers) {
+            next = match next_link(&response.headers)? {
                 None => None,
                 Some(link) => {
                     if !link.starts_with(&allowed_prefix) {
@@ -650,21 +662,37 @@ fn mentions_secondary_limit(body: &str) -> bool {
     head.to_ascii_lowercase().contains("secondary rate limit")
 }
 
-/// The URL of the `rel="next"` entry of a `Link` header, if there is one.
-fn next_link(headers: &Headers) -> Option<String> {
-    let mut rest = headers.get("link")?;
+/// The URL of the `rel="next"` entry of a `Link` header.
+///
+/// `Ok(None)` means the header is absent, empty or well formed without a
+/// `next` entry. A header that cannot be parsed is an error, because reading
+/// it as "no next page" could end pagination early while the sync still
+/// looked complete.
+fn next_link(headers: &Headers) -> Result<Option<String>, FetchError> {
+    let Some(mut rest) = headers.get("link") else {
+        return Ok(None);
+    };
+    if rest.trim().is_empty() {
+        return Ok(None);
+    }
+    let mut entries = 0usize;
+    let mut next = None;
     while let Some(start) = rest.find('<') {
         let after = &rest[start + 1..];
-        let end = after.find('>')?;
+        let end = after.find('>').ok_or(FetchError::MalformedLinkHeader)?;
         let url = &after[..end];
         let tail = &after[end + 1..];
         let params_len = tail.find('<').unwrap_or(tail.len());
-        if has_rel_next(tail[..params_len].trim().trim_end_matches(',')) {
-            return Some(url.to_string());
+        entries += 1;
+        if next.is_none() && has_rel_next(tail[..params_len].trim().trim_end_matches(',')) {
+            next = Some(url.to_string());
         }
         rest = &tail[params_len..];
     }
-    None
+    if entries == 0 {
+        return Err(FetchError::MalformedLinkHeader);
+    }
+    Ok(next)
 }
 
 fn has_rel_next(params: &str) -> bool {
@@ -1374,8 +1402,8 @@ mod tests {
 
     #[test]
     fn link_headers_are_parsed() {
-        let next = |value: &str| next_link(&link_header(value));
-        assert_eq!(next_link(&Headers::new()), None);
+        let next = |value: &str| next_link(&link_header(value)).unwrap();
+        assert_eq!(next_link(&Headers::new()).unwrap(), None);
         assert_eq!(
             next("<https://a.test/1>; rel=\"prev\", <https://a.test/3>; rel=\"next\", <https://a.test/9>; rel=\"last\""),
             Some("https://a.test/3".to_string())
@@ -1393,9 +1421,18 @@ mod tests {
             Some("https://a.test/3".to_string())
         );
         assert_eq!(next("<https://a.test/1>; rel=\"prev\""), None);
-        assert_eq!(next("rel=\"next\""), None);
-        assert_eq!(next("<https://a.test/1"), None);
         assert_eq!(next(""), None);
+    }
+
+    #[test]
+    fn malformed_link_headers_are_errors_not_silence() {
+        for bad in ["rel=\"next\"", "<https://a.test/1", "garbage"] {
+            assert_eq!(
+                next_link(&link_header(bad)),
+                Err(FetchError::MalformedLinkHeader),
+                "{bad:?}"
+            );
+        }
     }
 
     #[test]

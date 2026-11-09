@@ -10,3 +10,6 @@ repository.workspace = true
 [dependencies]
 nexus-domain = { path = "../domain" }
 nexus-graph = { path = "../graph" }
+
+[dev-dependencies]
+nexus-analysis = { path = "../analysis" }

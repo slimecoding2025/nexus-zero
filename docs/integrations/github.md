@@ -20,10 +20,20 @@ The API version is pinned on purpose so response shapes do not change silently.
 
 ## What it does not do
 
-- It discovers **no relationships** (edges) yet. Planned next: workflow `uses:` references and deployment environments.
+- Relationship discovery covers only `uses:` references in workflow files (see below). Deployment environments, package manifests and other relationships are not discovered.
 - It has no real HTTP transport.
 - It never sleeps or retries. A rate limit is returned as an error that says how long to wait; the caller decides.
 - Cloudflare, Vercel, Render and Supabase adapters do not exist yet.
+
+## Relationship discovery (workflow `uses:` references)
+
+`GitHubClient::discover_workflow_dependencies` takes the inventory from `discover_repositories` and, for each listed repository, lists `.github/workflows` and reads each `.yml`/`.yaml` file with the raw media type (`application/vnd.github.raw+json`). Every `uses: owner/repo[/path]@ref` line becomes a `DependsOn` edge from the repository to the referenced repository. Edges are **observed** (the text is in the file), method `ManifestParse`, with evidence such as `acme/web/.github/workflows/ci.yml:8 (uses: actions/checkout@v4)`.
+
+- Reading file contents needs the **Contents** read permission, which the inventory alone does not need. Per GitHub's docs, a missing path answers 404 and directory listings are limited to 1,000 files. Both checked on 2026-11-09 against the docs; the per-endpoint permission wording was not re-checked after that.
+- Repositories referenced but not in the inventory are added as nodes with `referenced_only=true`.
+- Skipped: local (`./`) and `docker://` references, block scalars, and unusual values. This is a line scanner, **not a YAML parser**: it can miss references written in unusual YAML (flow style, anchors) and cannot see reusable workflows' own dependencies. Absence of an edge does not prove absence of a dependency.
+- Limits: files per repository (default 100) and bytes per file (default 1 MiB). Skips and fetch errors are recorded in the report; `WorkflowDiscovery::complete_graph()` returns the graph only when nothing was skipped or failed.
+- Tested with a test double only. Never run against the real API.
 
 ## What is collected
 
@@ -67,7 +77,7 @@ Package installs were unavailable when the adapter was written, so `serde_json` 
 ## Known gaps and open items
 
 - No HTTP transport (needs an HTTP client dependency and a decision on TLS).
-- No relationship discovery.
-- A malformed `Link` header is currently read as "no next page", which could end pagination early while the report says the sync is complete. Candidate fix: report a malformed `Link` header as an error.
+- Relationship discovery is limited to workflow `uses:` references and uses a line scanner instead of a YAML parser.
+- Resolved: a malformed `Link` header now stops the sync with `FetchError::MalformedLinkHeader` instead of being read as "no next page".
 - Permissions of the user-repositories endpoint unverified.
 - Not yet run against a real organization, so real response shapes beyond the documented fields are untested.

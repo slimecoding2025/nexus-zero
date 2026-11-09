@@ -14,6 +14,7 @@ dependencies = [
 name = "nexus-discovery"
 version = "0.0.1"
 dependencies = [
+ "nexus-analysis",
  "nexus-domain",
  "nexus-graph",
 ]
