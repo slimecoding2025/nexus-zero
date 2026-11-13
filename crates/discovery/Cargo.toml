@@ -10,6 +10,12 @@ repository.workspace = true
 [dependencies]
 nexus-domain = { path = "../domain" }
 nexus-graph = { path = "../graph" }
+# Optional, never compiled in this repo yet: crates.io was unreachable when added.
+ureq = { version = "2", optional = true }
+
+[features]
+# Real HTTPS transport (`http::UreqTransport`). Off by default.
+http = ["dep:ureq"]
 
 [dev-dependencies]
 nexus-analysis = { path = "../analysis" }

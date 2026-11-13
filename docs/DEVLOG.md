@@ -33,3 +33,7 @@
 - Added relationship discovery from workflow files (`github/workflows.rs`): `uses:` references become observed `DependsOn` edges with file and line evidence. It uses a line scanner, not a YAML parser, so it can miss unusual syntax. Reading files needs the Contents read permission.
 - fmt, clippy (-D warnings) and 72 tests (6 domain, 10 graph, 6 analysis, 50 discovery) pass locally on Rust 1.97. Not verified: CI on GitHub for this branch, a run against a real organization.
 - Commit hygiene: the two earlier unmerged commits on `feat/discovery-github-adapter` carried a Claude co-author trailer; at the owner's request they were rewritten without it and force-pushed (with lease) on that unmerged branch. `main` was not affected.
+
+## 2026-11-13
+- Added `http::UreqTransport` behind the optional `http` feature of `nexus-discovery`. It was written without being compiled: crates.io was unreachable from the working environment, so `ureq` could not be fetched, and `Cargo.lock` was not updated. Only its origin and token-redaction checks have tests, and those have not been run either.
+- Not verified: `cargo build/clippy/test --features http`, rust 1.75, a run against the real GitHub API. Because `ureq` is now a declared (optional) dependency, the first cargo command with network access will rewrite `Cargo.lock`.

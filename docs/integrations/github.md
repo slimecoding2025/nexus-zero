@@ -1,6 +1,6 @@
 # GitHub integration (repository inventory)
 
-Status: library code and tests only. **It has never talked to the real GitHub API.** There is no HTTP transport in the repository yet; the network sits behind a `Transport` trait and the only implementation is a test double.
+Status: library code and tests only. **It has never talked to the real GitHub API.** The network sits behind a `Transport` trait; the only built and tested implementation is a test double. An HTTPS transport (`http::UreqTransport`, feature `http`) was written but **never compiled or run** (see "HTTP transport").
 
 Crate: `nexus-discovery`, module `github`.
 
@@ -21,7 +21,7 @@ The API version is pinned on purpose so response shapes do not change silently.
 ## What it does not do
 
 - Relationship discovery covers only `uses:` references in workflow files (see below). Deployment environments, package manifests and other relationships are not discovered.
-- It has no real HTTP transport.
+- Its HTTPS transport is optional (feature `http`) and unverified.
 - It never sleeps or retries. A rate limit is returned as an error that says how long to wait; the caller decides.
 - Cloudflare, Vercel, Render and Supabase adapters do not exist yet.
 
@@ -70,13 +70,28 @@ A `Transport` implementation must:
 - never follow a redirect to a different host;
 - return a non-2xx status as a normal response, not as an error.
 
+## HTTP transport (feature `http`, unverified)
+
+`http::UreqTransport` implements `Transport` with `ureq` 2.x (rustls). Off by default, so the default build does not use it. Written when crates.io was unreachable, so it has **not been compiled, linted or run**, and `Cargo.lock` does not yet contain `ureq`; the first build with network access will update it.
+
+Design, by construction (only the origin checks are covered by tests):
+
+- Only `https://` origins; the token is sent only to URLs under the configured origin (default `https://api.github.com`), anything else is refused before a request.
+- Redirects are never followed.
+- Non-2xx responses are returned as `Response`; only network failures are `TransportError`.
+- Bodies are read up to a limit plus one byte (default equals `DEFAULT_MAX_BODY_BYTES`; keep it equal to `SyncOptions::max_body_bytes`).
+- Repeated response headers are joined with commas.
+- 30 second timeout. No retries, no sleeping.
+
+To verify: `cargo build -p nexus-discovery --features http`, then clippy and tests with the same flag.
+
 ## JSON parsing
 
 Package installs were unavailable when the adapter was written, so `serde_json` could not be added. The crate contains a small strict JSON parser (RFC 8259, standard library only, nesting limited to 32 levels). Replace it with `serde_json` once dependencies can be fetched.
 
 ## Known gaps and open items
 
-- No HTTP transport (needs an HTTP client dependency and a decision on TLS).
+- The HTTP transport is unverified: it was written offline against the `ureq` 2.x API from memory. Needs `cargo build/clippy/test --features http` and `Cargo.lock` regenerated with network access, then a run against a real organization.
 - Relationship discovery is limited to workflow `uses:` references and uses a line scanner instead of a YAML parser.
 - Resolved: a malformed `Link` header now stops the sync with `FetchError::MalformedLinkHeader` instead of being read as "no next page".
 - Permissions of the user-repositories endpoint unverified.
